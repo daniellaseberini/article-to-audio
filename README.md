@@ -4,9 +4,13 @@
 ![Article to Audio demo](./demo.gif)
 -->
 
-**[Live demo →](https://article-to-audio-daniellaseberini-4420s-projects.vercel.app)** (runs in demo mode — see below)
+**[Live demo →](https://article-to-audio-daniellaseberini-4420s-projects.vercel.app)** — plays pre-generated sample audio only (no API calls, no cost). For live conversion of any article, run it locally with your own free ElevenLabs key — see [Setup](#setup).
 
 Paste a link to any article, and get back a playable, downloadable narration of it — powered by the [ElevenLabs](https://elevenlabs.io) text-to-speech API.
+
+**Two ways to use this app:**
+- **The public demo** (link above) — pre-generated audio only, so the deployment has zero API costs and contains no API key.
+- **Running it locally** — paste any article URL and get a real, live narration, using your own ElevenLabs API key.
 
 ## How it works
 
@@ -42,6 +46,7 @@ pip install -r requirements.txt
 # 3. Add your ElevenLabs API key
 cp .env.example .env
 # then open .env and paste in your key from https://elevenlabs.io/app/settings/api-keys
+# ElevenLabs' free tier includes 10,000 credits/month — plenty to try this out, no payment needed
 
 # 4. Run it
 python3 server.py
