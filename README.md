@@ -1,6 +1,6 @@
 # Article to Audio
 
-<!-- Demo GIF placeholder — record a ~15s screen capture of pasting a URL through to playing/downloading the audio, then drop it here:
+<!-- Demo GIF placeholder — record a ~15s screen capture showing: pasting a URL, the "Fetching → Extracting → Generating" pipeline animating through, and the result card with the player. Editorial paper-tone design with Fraunces/Archivo type — the GIF should show that off. Drop it here:
 ![Article to Audio demo](./demo.gif)
 -->
 
@@ -41,13 +41,14 @@ Then open `http://localhost:5050`.
 
 - **Backend:** Python + Flask — the only part that talks to the ElevenLabs API, using a key loaded from `.env` (never sent to or stored in the browser)
 - **Article extraction:** [trafilatura](https://trafilatura.readthedocs.io/), for pulling clean readable text out of arbitrary article pages
-- **Frontend:** a single static HTML page, vanilla JS, no framework or build step
+- **Frontend:** a single static HTML page, vanilla JS, no framework or build step — editorial/print-inspired design set in [Fraunces](https://fonts.google.com/specimen/Fraunces) (display serif) and [Archivo](https://fonts.google.com/specimen/Archivo) (UI/body)
 - **Text-to-speech:** [ElevenLabs API](https://elevenlabs.io/docs/api-reference/text-to-speech)
 
 ## Notes / limitations
 
-- Articles are truncated to the first 5,000 characters per conversion, to stay within typical ElevenLabs per-request limits
-- Uses a single default voice (ElevenLabs' premade "Rachel"); override it by setting `ELEVENLABS_VOICE_ID` in `.env`
+- Articles are capped at the first 2,500 characters per conversion to save API credits — this is shown transparently in the UI after extraction (e.g. "Article: 8,400 characters — converting the first 2,500 to save API credits")
+- ElevenLabs errors (quota exceeded, invalid key, etc.) are caught server-side and translated into plain-language messages in the UI, instead of raw API responses
+- Uses a single default voice (ElevenLabs' premade "Rachel"); override it by setting `ELEVENLABS_VOICE_ID` in `.env` — some accounts may need to set this, since voice availability varies by account
 - No accounts, database, or history — every conversion is a fresh, one-off request
 
 ## Future ideas
