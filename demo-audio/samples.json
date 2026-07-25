@@ -1,0 +1,9 @@
+[
+  {
+    "title": "Speech Synthesis",
+    "source": "Wikipedia",
+    "clipFile": "demo-audio/wikipedia-podcast-clip.m4a",
+    "fullFile": "demo-audio/wikipedia-podcast-clip.m4a",
+    "placeholder": true
+  }
+]

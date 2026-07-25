@@ -46,6 +46,11 @@
       font-family: 'Fraunces', serif; font-style: italic; font-weight: 400;
       font-size: 18px; color: var(--ink-soft); margin-top: 14px;
     }
+    .demo-banner {
+      display: none; align-items: center; gap: 8px; background: var(--error-bg);
+      border: 1px solid var(--error-border); color: #7A3A20; font-size: 12.5px; font-weight: 600;
+      padding: 9px 16px; border-radius: 20px; margin-top: 20px; text-align: left; line-height: 1.5;
+    }
     .waveform {
       display: flex; align-items: center; justify-content: center; gap: 3px;
       height: 30px; margin: 28px auto 0;
@@ -82,6 +87,36 @@
     }
     .btn-primary:hover:not(:disabled) { background: var(--accent); transform: translateY(-1px); }
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    /* ── SAMPLES (demo mode) ── */
+    .samples { display: none; flex-direction: column; gap: 10px; }
+    .samples-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-soft); margin-bottom: 4px;
+    }
+    .sample-card {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+      background: var(--paper); border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    }
+    .sample-card:hover { border-color: var(--accent-border); transform: translateY(-1px); }
+    .sample-info { flex: 1; min-width: 0; }
+    .sample-title {
+      font-family: 'Fraunces', serif; font-weight: 600; font-size: 16.5px; color: var(--ink);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sample-source { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+    .sample-play-btn {
+      flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+      background: var(--ink); color: var(--paper-card); font-size: 12.5px; font-weight: 600;
+      padding: 9px 15px; border-radius: 8px; transition: background 0.15s;
+    }
+    .sample-card:hover .sample-play-btn { background: var(--accent); }
+    .placeholder-note {
+      font-size: 12.5px; color: var(--ink-soft); background: var(--accent-soft);
+      border: 1px solid var(--accent-border); border-radius: 8px; padding: 10px 13px;
+      margin-top: 4px; line-height: 1.5;
+    }
 
     /* ── PIPELINE ── */
     .pipeline { display: none; flex-direction: column; margin-top: 30px; padding-top: 4px; }
@@ -164,6 +199,9 @@
         <h1>Article <em>to</em> Audio</h1>
         <p class="tagline">Give your reading list a voice.</p>
         <div class="waveform" id="hero-waveform" aria-hidden="true"></div>
+        <div class="demo-banner" id="demo-banner">
+          🎭 Demo mode: these narrations were pre-generated to keep the public demo free of API costs. Run it locally with your own ElevenLabs key for live conversion.
+        </div>
       </div>
 
       <div class="tool-card">
@@ -171,6 +209,11 @@
           <input type="url" id="url-input" placeholder="Paste an article link…" required />
           <button type="submit" class="btn-primary" id="submit-btn">Convert to Audio</button>
         </form>
+
+        <div class="samples" id="samples">
+          <div class="samples-label">Try a sample article</div>
+          <div id="sample-list"></div>
+        </div>
 
         <div class="pipeline" id="pipeline">
           <div class="step" data-step="fetch">
@@ -197,6 +240,7 @@
           <div class="result-title" id="result-title"></div>
           <div class="result-meta" id="result-meta"></div>
           <div class="char-note" id="char-note"></div>
+          <div class="placeholder-note" id="placeholder-note" style="display:none"></div>
           <div class="player">
             <button type="button" class="play-btn" id="play-btn">▶</button>
             <div class="player-track" id="player-track">
@@ -204,7 +248,7 @@
             </div>
             <div class="player-time" id="player-time">0:00 / 0:00</div>
           </div>
-          <a class="btn-download" id="download-link" download="article.mp3">⬇ Download MP3</a>
+          <a class="btn-download" id="download-link" download="article.mp3">⬇ Download <span id="download-label">MP3</span></a>
         </div>
       </div>
     </div>
@@ -213,6 +257,9 @@
   <audio id="audio-el" style="display:none"></audio>
 
   <script>
+    /* Public deployments (anything but a local dev server) run in demo mode — no ElevenLabs calls, only pre-generated samples. Real usage always happens on localhost with a .env key. */
+    const DEMO_MODE = !['localhost', '127.0.0.1', ''].includes(location.hostname);
+
     const form = document.getElementById('form');
     const urlInput = document.getElementById('url-input');
     const submitBtn = document.getElementById('submit-btn');
@@ -228,6 +275,10 @@
     const playerProgress = document.getElementById('player-progress');
     const playerTime = document.getElementById('player-time');
     const downloadLink = document.getElementById('download-link');
+    const demoBanner = document.getElementById('demo-banner');
+    const samplesEl = document.getElementById('samples');
+    const sampleList = document.getElementById('sample-list');
+    const placeholderNote = document.getElementById('placeholder-note');
 
     // Build equalizer bars with organic per-bar timing
     const BAR_COUNT = 26;
@@ -333,6 +384,7 @@
       audioEl.src = objectUrl;
       downloadLink.href = objectUrl;
       downloadLink.download = slugify(data.title) + '.mp3';
+      document.getElementById('download-label').textContent = 'MP3';
       document.getElementById('result-title').textContent = data.title;
 
       const words = data.usedCharCount / 5.5;
@@ -348,8 +400,92 @@
       noteEl.textContent = data.truncated
         ? `Article: ${data.fullCharCount.toLocaleString()} characters — converting the first ${data.usedCharCount.toLocaleString()} to save API credits`
         : `Article: ${data.fullCharCount.toLocaleString()} characters — converting all of it`;
+      placeholderNote.style.display = 'none';
 
       playBtn.textContent = '▶';
+    }
+
+    /* ── DEMO MODE ── */
+    async function loadSamples() {
+      try {
+        const res = await fetch('demo-audio/samples.json');
+        const samples = await res.json();
+        renderSampleCards(samples);
+      } catch (err) {
+        sampleList.innerHTML = '<p style="font-size:13px;color:var(--ink-soft)">Samples failed to load.</p>';
+      }
+    }
+
+    function renderSampleCards(samples) {
+      sampleList.innerHTML = '';
+      samples.forEach(sample => {
+        const card = document.createElement('div');
+        card.className = 'sample-card';
+        card.innerHTML = `
+          <div class="sample-info">
+            <div class="sample-title">${sample.title}</div>
+            <div class="sample-source">${sample.source}</div>
+          </div>
+          <span class="sample-play-btn">▶ Listen</span>
+        `;
+        card.addEventListener('click', () => runDemoConversion(sample));
+        sampleList.appendChild(card);
+      });
+    }
+
+    function renderDemoResult(sample) {
+      audioEl.src = sample.clipFile;
+      const ext = sample.fullFile.split('.').pop();
+      downloadLink.href = sample.fullFile;
+      downloadLink.download = slugify(sample.title) + '.' + ext;
+      document.getElementById('download-label').textContent = ext.toUpperCase();
+      document.getElementById('result-title').textContent = sample.title;
+
+      const metaEl = document.getElementById('result-meta');
+      metaEl.textContent = `${sample.source} · … listen`;
+      audioEl.onloadedmetadata = () => {
+        metaEl.textContent = `${sample.source} · ${formatTime(audioEl.duration)} listen`;
+        playerTime.textContent = `0:00 / ${formatTime(audioEl.duration)}`;
+      };
+
+      document.getElementById('char-note').textContent = '';
+      if (sample.placeholder) {
+        placeholderNote.textContent = '⚠ Placeholder audio (local system voice) — a real ElevenLabs sample will replace this once credits are available.';
+        placeholderNote.style.display = 'block';
+      } else {
+        placeholderNote.style.display = 'none';
+      }
+
+      playBtn.textContent = '▶';
+    }
+
+    async function runDemoConversion(sample) {
+      hideSection(errorCard);
+      hideSection(result);
+      resetSteps();
+      showSection(pipeline);
+      heroWaveform.classList.remove('active');
+
+      setStep('fetch', 'active');
+      stepTimers.push(setTimeout(() => { setStep('fetch', 'done'); setStep('extract', 'active'); }, 250));
+      stepTimers.push(setTimeout(() => {
+        setStep('extract', 'done'); setStep('voice', 'active');
+        heroWaveform.classList.add('active');
+      }, 600));
+
+      await new Promise(r => setTimeout(r, 1100));
+      clearStepTimers();
+      for (const s of ['fetch', 'extract', 'voice']) {
+        setStep(s, 'done');
+        await new Promise(r => setTimeout(r, 70));
+      }
+      await new Promise(r => setTimeout(r, 200));
+
+      hideSection(pipeline);
+      heroWaveform.classList.remove('active');
+
+      renderDemoResult(sample);
+      showSection(result);
     }
 
     // Custom player controls
@@ -377,6 +513,13 @@
     retryBtn.addEventListener('click', () => {
       if (urlInput.value.trim()) runConversion(urlInput.value.trim());
     });
+
+    if (DEMO_MODE) {
+      demoBanner.style.display = 'flex';
+      form.style.display = 'none';
+      samplesEl.style.display = 'flex';
+      loadSamples();
+    }
   </script>
 </body>
 </html>

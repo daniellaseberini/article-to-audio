@@ -1,8 +1,10 @@
 # Article to Audio
 
-<!-- Demo GIF placeholder — record a ~15s screen capture showing: pasting a URL, the "Fetching → Extracting → Generating" pipeline animating through, and the result card with the player. Editorial paper-tone design with Fraunces/Archivo type — the GIF should show that off. Drop it here:
+<!-- Demo GIF placeholder — record a ~15s screen capture showing: the demo-mode "Try a sample article" card, clicking it, the sped-up "Fetching → Extracting → Generating" pipeline animating through, and the result card with the player. Editorial paper-tone design with Fraunces/Archivo type — the GIF should show that off. Drop it here:
 ![Article to Audio demo](./demo.gif)
 -->
+
+**[Live demo →](https://article-to-audio.vercel.app)** (runs in demo mode — see below)
 
 Paste a link to any article, and get back a playable, downloadable narration of it — powered by the [ElevenLabs](https://elevenlabs.io) text-to-speech API.
 
@@ -12,6 +14,16 @@ Paste a link to any article, and get back a playable, downloadable narration of 
 2. A small backend server fetches the page and extracts just the readable article text (stripping nav, ads, comments, etc.).
 3. The backend sends that text to the ElevenLabs API server-side, so your API key never touches the browser.
 4. The resulting audio is returned to the page as a playable `<audio>` player with a download button.
+
+## Demo mode
+
+The public deployment doesn't call the ElevenLabs API at all — it has no key, and no backend is even deployed. Instead, the frontend detects it isn't running on `localhost` and switches to demo mode: the URL input is replaced with a "Try a sample article" card that plays a pre-generated narration stored in the repo under `demo-audio/`, using the same pipeline animation and result UI (sped up, since there's no real work happening).
+
+The sample list lives in `demo-audio/samples.json` — each entry has a `title`, `source`, a `clipFile` (played inline) and a `fullFile` (what the download button serves; can be a longer version of the same narration). Add more entries to show more sample cards.
+
+Running the app locally with a valid `ELEVENLABS_API_KEY` in `.env` always gives you the full live experience — mode detection is automatic and based purely on hostname, not a manual flag.
+
+**Current status:** the one sample in the repo right now is a placeholder narrated with the local macOS `say` command, not ElevenLabs — clearly labeled as such in the UI. It's there so the demo isn't empty while API credits are unavailable; swap in a real ElevenLabs narration by replacing the file and updating `samples.json` whenever credits allow.
 
 ## Setup
 
