@@ -4,7 +4,7 @@
 ![Article to Audio demo](./demo.gif)
 -->
 
-**[Live demo →](https://article-to-audio.vercel.app)** (runs in demo mode — see below)
+**[Live demo →](https://article-to-audio-daniellaseberini-4420s-projects.vercel.app)** (runs in demo mode — see below)
 
 Paste a link to any article, and get back a playable, downloadable narration of it — powered by the [ElevenLabs](https://elevenlabs.io) text-to-speech API.
 
