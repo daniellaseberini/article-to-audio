@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "article-to-audio",
+      "runtimeExecutable": "/Users/daniellaseberini/Desktop/Projects/article-to-audio/.venv/bin/python3",
+      "runtimeArgs": ["server.py"],
+      "port": 5050
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article to Audio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink:    #16181D;
+      --muted:  #6B7280;
+      --accent: #5B4CFF;
+      --accent-dark: #4638DB;
+      --bg:     #F6F5FB;
+      --card:   #FFFFFF;
+      --border: rgba(22,24,29,0.09);
+      --error-bg: rgba(217,45,32,0.08);
+      --error-border: rgba(217,45,32,0.25);
+      --error-text: #B42318;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 64px 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 12px 48px rgba(22,24,29,0.06), 0 2px 8px rgba(22,24,29,0.04);
+    }
+    .eyebrow {
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px;
+    }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+
+    form { display: flex; flex-direction: column; gap: 12px; }
+    input[type="url"] {
+      width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
+      border-radius: 12px; font-size: 15px; font-family: inherit; color: var(--ink);
+      background: var(--bg); transition: border-color 0.15s;
+    }
+    input[type="url"]:focus { outline: none; border-color: var(--accent); }
+    button {
+      font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+      border: none; border-radius: 12px; padding: 14px 20px;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent); color: white;
+      box-shadow: 0 4px 16px rgba(91,76,255,0.28);
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); }
+
+    .status { display: none; align-items: center; gap: 10px; margin-top: 22px; font-size: 14px; color: var(--muted); }
+    .status.active { display: flex; }
+    .spinner {
+      width: 18px; height: 18px; border: 2.5px solid rgba(91,76,255,0.20);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error { display: none; margin-top: 22px; background: var(--error-bg); border: 1px solid var(--error-border);
+      color: var(--error-text); border-radius: 12px; padding: 13px 16px; font-size: 13.5px; line-height: 1.5; }
+    .error.active { display: block; }
+
+    .result { display: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+    .result.active { display: block; }
+    .result-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .result-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+    audio { width: 100%; margin-bottom: 14px; }
+    .btn-download {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg); color: var(--ink); border: 1.5px solid var(--border);
+      text-decoration: none; font-size: 14px; font-weight: 600;
+      padding: 11px 18px; border-radius: 12px;
+    }
+    .btn-download:hover { border-color: var(--accent); color: var(--accent-dark); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="eyebrow">Text to Speech</div>
+    <h1>Article to Audio</h1>
+    <p class="sub">Paste a link to any article. We'll pull out the readable text and turn it into a downloadable narration.</p>
+
+    <form id="form">
+      <input type="url" id="url-input" placeholder="https://example.com/some-article" required />
+      <button type="submit" class="btn-primary" id="submit-btn">Convert to Audio</button>
+    </form>
+
+    <div class="status" id="status">
+      <div class="spinner"></div>
+      <span id="status-text">Extracting article text…</span>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <div class="result-title" id="result-title"></div>
+      <div class="result-meta" id="result-meta"></div>
+      <audio id="audio" controls></audio>
+      <a class="btn-download" id="download-link" download="article.mp3">⬇ Download MP3</a>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const urlInput = document.getElementById('url-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    const errorEl = document.getElementById('error');
+    const resultEl = document.getElementById('result');
+    const audioEl = document.getElementById('audio');
+    const downloadLink = document.getElementById('download-link');
+
+    function setLoading(on, text) {
+      submitBtn.disabled = on;
+      statusEl.classList.toggle('active', on);
+      if (text) statusText.textContent = text;
+    }
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.classList.add('active');
+    }
+
+    function slugify(title) {
+      return (title || 'article').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60) || 'article';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.classList.remove('active');
+      resultEl.classList.remove('active');
+      setLoading(true, 'Extracting article text and generating audio…');
+
+      try {
+        const res = await fetch('/api/convert', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({url: urlInput.value.trim()})
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error || 'Something went wrong. Please try again.');
+          return;
+        }
+
+        const byteChars = atob(data.audioBase64);
+        const bytes = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([bytes], {type: 'audio/mpeg'});
+        const objectUrl = URL.createObjectURL(blob);
+
+        audioEl.src = objectUrl;
+        downloadLink.href = objectUrl;
+        downloadLink.download = slugify(data.title) + '.mp3';
+        document.getElementById('result-title').textContent = data.title;
+        document.getElementById('result-meta').textContent =
+          data.charCount + ' characters narrated' + (data.truncated ? ' (article was long — truncated to the first ' + data.charCount + ' characters)' : '');
+        resultEl.classList.add('active');
+      } catch (err) {
+        showError('Couldn\'t reach the server. Is it running?');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
